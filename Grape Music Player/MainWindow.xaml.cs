@@ -443,5 +443,15 @@ namespace Grape_Music_Player
             }
         }
         #endregion
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            Window.Width = Window.ActualHeight;
+        }
+
+        private void MinButton_Click(object sender, RoutedEventArgs e)
+        {
+            Window.WindowState = WindowState.Minimized;
+        }
     }
 }
