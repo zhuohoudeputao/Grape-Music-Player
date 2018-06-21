@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2026
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grape Music Player", "Grape Music Player\Grape Music Player.csproj", "{80224A59-4A69-43F5-853D-B9ADA242FBD8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{80224A59-4A69-43F5-853D-B9ADA242FBD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80224A59-4A69-43F5-853D-B9ADA242FBD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80224A59-4A69-43F5-853D-B9ADA242FBD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80224A59-4A69-43F5-853D-B9ADA242FBD8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E680BCC4-1D18-4370-B33A-337DB4DA81A6}
+	EndGlobalSection
+EndGlobal
