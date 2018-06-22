@@ -111,6 +111,11 @@ namespace Grape_Music_Player
         {
             return base.Position;
         }
+        public double GetProcess()
+        {
+            if (GetMusicDuringTime().TotalSeconds == 0) return 0; 
+            return GetPosition().TotalSeconds / GetMusicDuringTime().TotalSeconds;
+        }
         #endregion
     }
 }

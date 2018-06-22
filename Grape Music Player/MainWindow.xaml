@@ -9,9 +9,8 @@
         Title="Grape Music Player"
         Name="Window"
         MinHeight="300" MinWidth="300"
-        Height="300" ResizeMode="CanResizeWithGrip" Width="{Binding ElementName=Window,Path=ActualHeight}"
-        
-        WindowStyle="None" WindowStartupLocation="CenterScreen"
+        Height="300" ResizeMode="CanResizeWithGrip" Width="300"
+        WindowStyle="None" WindowStartupLocation="Manual"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         MouseEnter="Window_MouseEnter"
         MouseLeave="Window_MouseLeave"
@@ -61,37 +60,116 @@
                     </Grid>
                 </Grid>
 
-                <Grid Name="ControlBar" Grid.Row="2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-                    <Rectangle Grid.ColumnSpan="8" Panel.ZIndex="0">
-                        <Rectangle.Fill>
-                            <SolidColorBrush Color="Black" Opacity="0.3"/>
-                        </Rectangle.Fill>
-                        <Rectangle.Effect>
-                            <BlurEffect/>
-                        </Rectangle.Effect>
+                <DockPanel Grid.Row="2">
+                    
+                    <Grid Name="ControlBar" Height="35" DockPanel.Dock="Bottom">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Rectangle Grid.ColumnSpan="9" Panel.ZIndex="0">
+                            <Rectangle.Fill>
+                                <SolidColorBrush Color="Black" Opacity="0.3"/>
+                            </Rectangle.Fill>
+                            <Rectangle.Effect>
+                                <BlurEffect/>
+                            </Rectangle.Effect>
 
-                    </Rectangle>
-                    <Button Name="LoveButton" ToolTip="我喜欢" Grid.Column="0" Content="&#xf004;" Click="LoveButton_Click"/>
-                    <Button Name="PlayButton" ToolTip="播放/暂停" Grid.Column="1" Content="&#xf04c;" Click="PlayButton_Click"/>
-                    <Button Name="NextButton" ToolTip="下一曲" Grid.Column="2" Content="&#xf054;" Click="NextButton_Click"/>
-                    <Button Name="DeleteButton" ToolTip="删除歌曲" Grid.Column="3" Content="&#xf1f8;" Click="DeleteButton_Click"/>
-                    <Button Name="LyricButton" ToolTip="显示/隐藏歌词" Grid.Column="4" Content="词" Click="LyricButton_Click"/>
-                    <Button Name="AddButton" ToolTip="添加本地歌曲文件夹" Grid.Column="5" Content="&#xf067;" Click="AddButton_Click"/>
-                    <Button Name="MinButton" ToolTip="最小化" Grid.Column="6" Content="&#xf2d1;" Click="MinButton_Click"/>
-                    <Button Name="ExitButton" ToolTip="退出" Grid.Column="7" Content="&#xf00d;" Click="ExitButton_Click"/>
-                </Grid>
+                        </Rectangle>
+                        <Button Name="LoveButton" ToolTip="我喜欢" Grid.Column="0" Content="&#xf004;" Click="LoveButton_Click"/>
+                        <Button Name="PlayButton" ToolTip="播放/暂停" Grid.Column="1" Content="&#xf04c;" Click="PlayButton_Click"/>
+                        <Button Name="NextButton" ToolTip="下一曲" Grid.Column="2" Content="&#xf054;" Click="NextButton_Click"/>
+                        <Button Name="DeleteButton" ToolTip="删除歌曲" Grid.Column="3" Content="&#xf1f8;" Click="DeleteButton_Click"/>
+                        <Button Name="LyricButton" ToolTip="显示/隐藏歌词" Grid.Column="4" Content="词" Click="LyricButton_Click"/>
+                        <Button Name="AddButton" ToolTip="添加本地歌曲文件夹" Grid.Column="5" Content="&#xf067;" Click="AddButton_Click"/>
+                        <Button Name="TopButton" ToolTip="置顶/取掉置顶" Grid.Column="6" Content="&#xf08d;" Click="TopButton_Click"/>
+                        <Button Name="MinButton" ToolTip="最小化" Grid.Column="7" Content="&#xf2d1;" Click="MinButton_Click"/>
+                        <Button Name="ExitButton" ToolTip="退出" Grid.Column="8" Content="&#xf00d;" Click="ExitButton_Click"/>
+                    </Grid>
+                    <Slider Name="MusicProcessSlider"
+                            Height="5" 
+                            VerticalAlignment="Bottom" 
+                            Focusable="False" 
+                            ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                        <Slider.Resources>
+                            <Style x:Key="MyRepeatButton" TargetType="RepeatButton">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{Binding Path=Background}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Slider.Resources>
+                        <Slider.Template>
+                            <ControlTemplate TargetType="Slider">
+                                <Track Grid.Column="1" Focusable="False">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Background="White"
+                                                      BorderBrush="Transparent"
+                                                      Focusable="False"
+                                                      Style="{StaticResource  MyRepeatButton}"
+                                                      
+                                Command="Slider.DecreaseLarge"/>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Background="Transparent" 
+                                                      BorderBrush="Transparent"
+                                                      Focusable="False"
+                                                      Style="{StaticResource  MyRepeatButton}"
+                                Command="Slider.IncreaseLarge"/>
+                                    </Track.IncreaseRepeatButton>
+                                    <!--<Track.Thumb>
+                                        <Thumb Background="White"
+                                               BorderBrush="Transparent"/>
+                                    </Track.Thumb>-->
+                                </Track>
+                            </ControlTemplate>
+                        </Slider.Template>
+                    </Slider>
+                </DockPanel>
+                
 
             </Grid>
         </Grid>
     </Border>
+    <Window.Resources>
+        <Style x:Name="Slider_CustomStyle" TargetType="Slider">
+            <Setter Property="Focusable" Value="false" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Track Grid.Column="1" Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Background="White"    
+                                Command="Slider.DecreaseLarge"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Background="Transparent"   
+                                Command="Slider.IncreaseLarge"/>
+                                </Track.IncreaseRepeatButton>
+                                <!--<Track.Thumb>
+                                        <Thumb Background="White"/>
+                                    </Track.Thumb>-->
+                        </Track>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 </Window>

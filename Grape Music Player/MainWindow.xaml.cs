@@ -37,6 +37,7 @@ namespace Grape_Music_Player
         Player player = new Player();
         private DispatcherTimer TitleTimer=new DispatcherTimer();
         private DispatcherTimer LyricTimer = new DispatcherTimer();
+        private DispatcherTimer MusicProcessTimer = new DispatcherTimer();
 
         public MainWindow()
         {
@@ -119,6 +120,9 @@ namespace Grape_Music_Player
             LyricTimer.Tick += LyricTimer_Tick;
             LyricTimer.Interval = new TimeSpan(0, 0, 1);
 
+            MusicProcessTimer.Tick += MusicProcessTimer_Tick;
+            MusicProcessTimer.Interval = new TimeSpan(0, 0, 1);
+
             try
             {
                 player.Load(player.CurrentSongAddress);
@@ -128,6 +132,11 @@ namespace Grape_Music_Player
             {
                 player.NextSong();
             }
+        }
+
+        private void MusicProcessTimer_Tick(object sender, EventArgs e)
+        {
+            MusicProcessSlider.Value = MusicProcessSlider.Maximum * player.GetProcess();
         }
 
         private void LyricTimer_Tick(object sender, EventArgs e)
@@ -189,6 +198,7 @@ namespace Grape_Music_Player
         {
             TitleTimer.Stop();
             LyricTimer.Stop();
+            MusicProcessTimer.Stop();
             AlbumPicture.Source = new BitmapImage(new Uri(@"\background.png", UriKind.Relative));
             //AlbumPicture.Source = null;
             try
@@ -246,6 +256,8 @@ namespace Grape_Music_Player
             GetLyric();
             lyricPanel.SetSource(lyric, Title);
             LyricTimer.Start();
+
+            MusicProcessTimer.Start();
         }
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -406,7 +418,7 @@ namespace Grape_Music_Player
         private void Window_MouseLeave(object sender, MouseEventArgs e)
         {
             TitleBar.Visibility = Visibility.Hidden;
-            ControlBar.Visibility = Visibility.Hidden;
+            ControlBar.Visibility = Visibility.Collapsed;
         }
 
         private string AmendString(String str)
@@ -452,6 +464,21 @@ namespace Grape_Music_Player
         private void MinButton_Click(object sender, RoutedEventArgs e)
         {
             Window.WindowState = WindowState.Minimized;
+        }
+
+        private void TopButton_Click(object sender, RoutedEventArgs e)
+        {
+            if(Window.Topmost == true)
+            {
+                Window.Topmost = false;
+                TopButton.Foreground= System.Windows.Media.Brushes.White;
+            }
+            else
+            {
+                Window.Topmost = true;
+                TopButton.Foreground = System.Windows.Media.Brushes.LightGreen;
+            }
+
         }
     }
 }
