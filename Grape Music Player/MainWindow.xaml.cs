@@ -70,19 +70,26 @@ namespace Grape_Music_Player
             do
             {
                 availablenum = 0;
-                SqlDataReader sqlDataReader = sqlCmd.ExecuteReader();
-                while (sqlDataReader.Read())
+                try
                 {
-                    if (File.Exists((string)sqlDataReader[0].ToString()))
+                    SqlDataReader sqlDataReader = sqlCmd.ExecuteReader();
+                    while (sqlDataReader.Read())
                     {
-                        availablenum++;
+                        if (File.Exists((string)sqlDataReader[0].ToString()))
+                        {
+                            availablenum++;
+                        }
+                        else
+                        {
+                            delete.Add((string)sqlDataReader[0]);
+                        }
                     }
-                    else
-                    {
-                        delete.Add((string)sqlDataReader[0]);
-                    }
+                    sqlDataReader.Close();
                 }
-                sqlDataReader.Close();
+                catch (InvalidOperationException)
+                {
+                    continue;
+                }
 
                 foreach(string d in delete)
                 {

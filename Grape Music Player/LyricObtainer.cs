@@ -84,52 +84,59 @@ namespace Grape_Music_Player
             JObject jo = JObject.Parse(reader.ReadToEnd());
 
             JObject jo2 = new JObject();
-            if ((int)jo["code"] == 200)
+            try
             {
-                string id="";
-                bool found = false;
-                foreach (var item in jo["result"]["songs"])
+                if ((int)jo["code"] == 200)
                 {
-                    if((string)item["artists"][0]["name"]==artist&&(string)item["name"]==title)
+                    string id = "";
+                    bool found = false;
+                    foreach (var item in jo["result"]["songs"])
                     {
-                        id = (string)item["id"];
-                        found = true;
-                        break;
+                        if ((string)item["artists"][0]["name"] == artist && (string)item["name"] == title)
+                        {
+                            id = (string)item["id"];
+                            found = true;
+                            break;
+                        }
                     }
+                    if (found == false)
+                        return false;
+                    Request = new Uri("http://music.163.com/api/song/lyric?os=pc&id=" + id + "&lv=-1");
+                    request = (HttpWebRequest)WebRequest.Create(Request);
+                    request.Method = "GET";
+                    request.ContentType = "json";
+                    try
+                    { response = (HttpWebResponse)request.GetResponse(); }
+                    catch (WebException)
+                    {
+                        return false;
+                    }
+                    reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+                    jo2 = JObject.Parse(reader.ReadToEnd());
+                    if (jo2["lrc"] == null || (string)jo2["lrc"]["lyric"] == null)
+                        return false;
+                    string lyricInJson = (string)jo2["lrc"]["lyric"];
+
+                    string Name = path.Substring(path.LastIndexOf("\\") + 1, path.LastIndexOf(".") - path.LastIndexOf("\\") - 1);
+                    if (!Directory.Exists("Lyrics\\"))
+                        Directory.CreateDirectory("Lyrics\\");
+
+                    string LocalPath = String.Format("Lyrics\\" + Name + ".lrc");
+
+                    string[] seperator = { "\n" };
+                    string[] lrcInJson = lyricInJson.Split(seperator, StringSplitOptions.None);
+                    System.IO.File.WriteAllLines(LocalPath, lrcInJson);
+
+                    lyricPath = LocalPath;
+                    WriteInLyricContent(Encoding.UTF8);
+                    return true;
                 }
-                if (found == false)
-                    return false;
-                Request = new Uri("http://music.163.com/api/song/lyric?os=pc&id="+id+"&lv=-1");
-                request = (HttpWebRequest)WebRequest.Create(Request);
-                request.Method = "GET";
-                request.ContentType = "json";
-                try
-                { response = (HttpWebResponse)request.GetResponse(); }
-                catch (WebException)
+                else
                 {
                     return false;
                 }
-                reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
-                jo2 = JObject.Parse(reader.ReadToEnd());
-                if (jo2["lrc"]==null||(string)jo2["lrc"]["lyric"] == null)
-                    return false;
-                string lyricInJson = (string)jo2["lrc"]["lyric"];
-                
-                string Name = path.Substring(path.LastIndexOf("\\") + 1, path.LastIndexOf(".") - path.LastIndexOf("\\") - 1);
-                if (!Directory.Exists("Lyrics\\"))
-                    Directory.CreateDirectory("Lyrics\\");
-
-                string LocalPath = String.Format("Lyrics\\" + Name + ".lrc");
-
-                string[] seperator = { "\n" };
-                string[] lrcInJson = lyricInJson.Split(seperator,StringSplitOptions.None);
-                System.IO.File.WriteAllLines(LocalPath, lrcInJson);
-
-                lyricPath = LocalPath;
-                WriteInLyricContent(Encoding.UTF8);
-                return true;
             }
-            else
+            catch(NullReferenceException)
             {
                 return false;
             }
