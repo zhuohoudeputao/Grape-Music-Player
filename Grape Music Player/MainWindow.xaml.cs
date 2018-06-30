@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -35,20 +36,12 @@ namespace Grape_Music_Player
         const string strConn = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=|DataDirectory|\Music.mdf;Integrated Security=True;Connect Timeout=30";
 
         Player player = new Player();
-        private DispatcherTimer TitleTimer=new DispatcherTimer();
+        private DispatcherTimer TitleTimer = new DispatcherTimer();
         private DispatcherTimer LyricTimer = new DispatcherTimer();
         private DispatcherTimer MusicProcessTimer = new DispatcherTimer();
 
         public MainWindow()
         {
-            //RoutedEventHandler handler = null;
-            //handler = (s, e) =>
-            //{
-            //    Loaded -= handler;
-            //    this.EnableBlur();
-            //};
-            //Loaded += handler;
-
             InitializeComponent();
 
             SqlConnection conn = new SqlConnection(strConn);
@@ -62,9 +55,9 @@ namespace Grape_Music_Player
             }
             //首先检查歌曲的数量是否足够
             int availablenum = 0;
-            
+
             List<string> delete = new List<string>();
-            
+
             string str = "SELECT Address from MUSIC";
             SqlCommand sqlCmd = new SqlCommand(str, conn);
             do
@@ -91,13 +84,13 @@ namespace Grape_Music_Player
                     continue;
                 }
 
-                foreach(string d in delete)
+                foreach (string d in delete)
                 {
                     string del = string.Format("DELETE from Music WHERE Address=N'{0}'", d);
                     SqlCommand deletecmd = new SqlCommand(del, conn);
                     deletecmd.ExecuteNonQuery();
                 }
-                
+
                 if (availablenum < 2)
                 {
                     MessageBox.Show("您尚未添加歌曲或歌曲量不足，请选择文件夹以添加歌曲");
@@ -105,22 +98,12 @@ namespace Grape_Music_Player
                 }
             } while (availablenum < 2);
 
-            //搞定之后随机选择两首音乐放入player中
-            str = "SELECT top 2 * from MUSIC ORDER BY newid()";
-            sqlCmd = new SqlCommand(str, conn);
-            SqlDataReader sqlDR = sqlCmd.ExecuteReader();
-            sqlDR.Read();
-            player.CurrentSongAddress = new Uri((string)sqlDR[0]);
-            sqlDR.Read();
-            player.NextSongAddress = new Uri((string)sqlDR[0]);
-            sqlDR.Close();
-
             conn.Close();
 
             player.MusicChange += Player_MusicChange;
             player.MusicNeeded += Player_MusicNeeded;
             player.MusicPlayed += Player_MusicPlayed;
-            
+
             TitleTimer.Tick += TitleTimer_Tick;
             TitleTimer.Interval = new TimeSpan(0, 0, 0, 0, 500);
 
@@ -132,13 +115,14 @@ namespace Grape_Music_Player
 
             try
             {
-                player.Load(player.CurrentSongAddress);
-                player.Play();
+                player.NextSong();
             }
-            catch(IOException)
+            catch (IOException)
             {
                 player.NextSong();
             }
+
+            GarbageCollect();
         }
 
         private void MusicProcessTimer_Tick(object sender, EventArgs e)
@@ -188,16 +172,14 @@ namespace Grape_Music_Player
                 MessageBox.Show(ex.ToString());
             }
 
-            do
+            string str = "SELECT top 10 * from MUSIC ORDER BY newid()";
+            SqlCommand sqlCmd = new SqlCommand(str, conn);
+            SqlDataReader sqlDR = sqlCmd.ExecuteReader();
+            while (sqlDR.Read())
             {
-                string str = "SELECT top 1 * from MUSIC ORDER BY newid()";
-                SqlCommand sqlCmd = new SqlCommand(str, conn);
-                SqlDataReader sqlDR = sqlCmd.ExecuteReader();
-                sqlDR.Read();
-                player.NextSongAddress = new Uri((string)sqlDR[0]);
-                sqlDR.Close();
-            } while (player.NextSongAddress == player.CurrentSongAddress);
-            
+                player.NextSongAddress.Enqueue(new Uri((string)sqlDR[0]));
+            }
+            sqlDR.Close();
             conn.Close();
         }
 
@@ -223,11 +205,9 @@ namespace Grape_Music_Player
                     }
                 }
             }
-            catch(OverflowException)
-            {
+            catch (OverflowException) { }
+            catch (ArgumentException) { }
 
-            }
-            
 
             SqlConnection conn = new SqlConnection(strConn);
             try
@@ -238,25 +218,25 @@ namespace Grape_Music_Player
             {
                 MessageBox.Show(ex.ToString());
             }
-            string str =string.Format( "SELECT Loved,Name from MUSIC WHERE Address=N'{0}'", player.CurrentSongAddress.LocalPath);
+            string str = string.Format("SELECT Loved,Name from MUSIC WHERE Address=N'{0}'", player.CurrentSongAddress.LocalPath);
             SqlCommand sqlCmd = new SqlCommand(str, conn);
             SqlDataReader sqlDR = sqlCmd.ExecuteReader();
             sqlDR.Read();
-            int Loved = (int)sqlDR[0];
-            if (Loved==1)
+            short Loved = (short)sqlDR[0];
+            if (Loved == 1)
                 LoveButton.Foreground = System.Windows.Media.Brushes.Red;
             else
                 LoveButton.Foreground = System.Windows.Media.Brushes.White;
             string Title = (string)sqlDR[1];
-            
+
             TitleLabel.Content = Title;
             UpdateLayout();//使得得到的是最新的ActualWidth
-            if (TitleLabel.ActualWidth >= TitleBar.ActualWidth&&TitleLabel.ActualWidth!=0)
+            if (TitleLabel.ActualWidth >= TitleBar.ActualWidth && TitleLabel.ActualWidth != 0)
             {
                 TitleLabel.Content = Title + "  ";//加个空格是为了美观
                 TitleTimer.Start();
             }
-                
+
             sqlDR.Close();
             conn.Close();
 
@@ -265,6 +245,8 @@ namespace Grape_Music_Player
             LyricTimer.Start();
 
             MusicProcessTimer.Start();
+
+            GarbageCollect();
         }
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -282,12 +264,7 @@ namespace Grape_Music_Player
         {
             System.Windows.Forms.FolderBrowserDialog fbd = new System.Windows.Forms.FolderBrowserDialog();
             System.Windows.Forms.DialogResult result = fbd.ShowDialog();
-
-            if (result == System.Windows.Forms.DialogResult.Cancel)
-            {
-                return;
-            }
-
+            if (result == System.Windows.Forms.DialogResult.Cancel) { return; }
             SqlConnection conn = new SqlConnection(strConn);
             try
             {
@@ -299,49 +276,24 @@ namespace Grape_Music_Player
             }
 
             string path = fbd.SelectedPath.Trim();
-            string[] Files = Directory.GetFiles(path, "*.mp3", SearchOption.AllDirectories);
-
+            string[] Files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).Where(s => s.EndsWith(".mp3") || s.EndsWith(".flac")).ToArray();
             foreach (string File in Files)
             {
                 if (File.Contains("'"))
                     continue;
-
-                string Name = File.Substring(File.LastIndexOf("\\") + 1, File.LastIndexOf(".") - File.LastIndexOf("\\") - 1);
-
-                string str = string.Format("SELECT * from MUSIC Where Address=N'{0}'", File);
-                SqlCommand sqlCmd = new SqlCommand(str, conn);
-                SqlDataReader sqlDataReader = sqlCmd.ExecuteReader();
-                if (!sqlDataReader.HasRows)
+                try
                 {
-                    sqlDataReader.Close();
-                    str = string.Format("INSERT INTO MUSIC(Address,Name) VALUES(N'{0}',N'{1}')", File, Name);
-                    sqlCmd = new SqlCommand(str, conn);
+                    string Name = File.Substring(File.LastIndexOf("\\") + 1, File.LastIndexOf(".") - File.LastIndexOf("\\") - 1);
+                    SqlCommand sqlCmd = new SqlCommand(string.Format("INSERT INTO MUSIC(Address,Name) VALUES(N'{0}',N'{1}')", File, Name), conn);
                     sqlCmd.ExecuteNonQuery();
-                }
-                sqlDataReader.Close();
-            }
 
-            Files = Directory.GetFiles(path, "*.flac", SearchOption.AllDirectories);
-            foreach (string File in Files)
-            {
-                if (File.Contains("'"))
+                }
+                catch (SqlException)
+                {
                     continue;
-
-                string Name = File.Substring(File.LastIndexOf("\\") + 1, File.LastIndexOf(".") - File.LastIndexOf("\\") - 1);
-
-                string str = string.Format("SELECT * from MUSIC Where Address=N'{0}'", File);
-                SqlCommand sqlCmd = new SqlCommand(str, conn);
-                SqlDataReader sqlDataReader = sqlCmd.ExecuteReader();
-                if (!sqlDataReader.HasRows)
-                {
-                    sqlDataReader.Close();
-                    str = string.Format("INSERT INTO MUSIC(Address,Name) VALUES(N'{0}',N'{1}')", File, Name);
-                    sqlCmd = new SqlCommand(str, conn);
-                    sqlCmd.ExecuteNonQuery();
                 }
-                sqlDataReader.Close();
             }
-
+            fbd.Dispose();
             conn.Close();
         }
 
@@ -392,7 +344,7 @@ namespace Grape_Music_Player
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             MessageBoxResult result = MessageBox.Show("删除该歌曲将会同时删除本地文件，确认删除？", "删除文件", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
-            if(result==MessageBoxResult.OK)
+            if (result == MessageBoxResult.OK)
             {
                 SqlConnection conn = new SqlConnection(strConn);
                 try
@@ -416,6 +368,7 @@ namespace Grape_Music_Player
             }
         }
 
+        #region 界面控制
         private void Window_MouseEnter(object sender, MouseEventArgs e)
         {
             TitleBar.Visibility = Visibility.Visible;
@@ -427,6 +380,28 @@ namespace Grape_Music_Player
             TitleBar.Visibility = Visibility.Hidden;
             ControlBar.Visibility = Visibility.Collapsed;
         }
+
+        private void MinButton_Click(object sender, RoutedEventArgs e)
+        {
+            Window.WindowState = WindowState.Minimized;
+        }
+
+        private void TopButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Window.Topmost == true)
+            {
+                Window.Topmost = false;
+                TopButton.Foreground = System.Windows.Media.Brushes.White;
+            }
+            else
+            {
+                Window.Topmost = true;
+                TopButton.Foreground = System.Windows.Media.Brushes.LightGreen;
+            }
+
+        }
+
+        #endregion
 
         private string AmendString(String str)
         {
@@ -445,7 +420,7 @@ namespace Grape_Music_Player
             lyricObtainer.SetPara(player.CurrentSongAddress.LocalPath, player.GetMusicDuringTime().TotalSeconds);
             lyric = lyricObtainer.GetLyric();
         }
-        
+
         private void LyricButton_Click(object sender, RoutedEventArgs e)
         {
             if (LyricPanel.Visibility == Visibility.Visible)
@@ -463,29 +438,21 @@ namespace Grape_Music_Player
         }
         #endregion
 
-        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        #region 内存回收
+        [DllImport("kernel32.dll", EntryPoint = "SetProcessWorkingSetSize")]
+        public static extern int SetProcessWorkingSetSize(IntPtr process, int minSize, int maxSize);
+        /// <summary>
+        /// 释放内存
+        /// </summary>
+        public static void GarbageCollect()
         {
-            Window.Width = Window.ActualHeight;
-        }
-
-        private void MinButton_Click(object sender, RoutedEventArgs e)
-        {
-            Window.WindowState = WindowState.Minimized;
-        }
-
-        private void TopButton_Click(object sender, RoutedEventArgs e)
-        {
-            if(Window.Topmost == true)
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
-                Window.Topmost = false;
-                TopButton.Foreground= System.Windows.Media.Brushes.White;
+                MainWindow.SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, -1, -1);
             }
-            else
-            {
-                Window.Topmost = true;
-                TopButton.Foreground = System.Windows.Media.Brushes.LightGreen;
-            }
-
         }
+        #endregion
     }
 }

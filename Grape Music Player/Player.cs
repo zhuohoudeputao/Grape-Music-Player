@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 
 namespace Grape_Music_Player
@@ -12,8 +15,7 @@ namespace Grape_Music_Player
     {
         public Uri CurrentSongAddress
         { get; set; }
-        public Uri NextSongAddress
-        { get; set; }
+        public Queue<Uri> NextSongAddress = new Queue<Uri>();
 
         #region 播放状态(播放中、暂停)
         public enum PlayState : int
@@ -27,10 +29,12 @@ namespace Grape_Music_Player
             if (playState == PlayState.playing)
             {
                 Pause();
+                playState = PlayState.paused;
             }
             else
             {
                 Play();
+                playState = PlayState.playing;
             }
         }
         #endregion
@@ -55,7 +59,8 @@ namespace Grape_Music_Player
         public void Load(Uri File)
         {
             Close();
-            Open(File);
+            CurrentSongAddress = File;
+            Open(CurrentSongAddress);
             MusicChange();
         }
         #endregion
@@ -75,18 +80,19 @@ namespace Grape_Music_Player
         public void NextSong()
         {
             Close();
-            CurrentSongAddress = NextSongAddress;
+            if (NextSongAddress.Count < 2)
+                MusicNeeded();
             try
             {
-                Load(CurrentSongAddress);
+                Load(NextSongAddress.Dequeue());
                 Play();
             }
             catch(IOException)
             {
-                MusicNeeded();
+                if(NextSongAddress.Count < 2)
+                    MusicNeeded();
                 NextSong();
             }
-            MusicNeeded();
         }
         private void AutoNextSong(object sender, EventArgs e)
         {
