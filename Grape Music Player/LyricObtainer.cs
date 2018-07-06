@@ -65,27 +65,21 @@ namespace Grape_Music_Player
 
         private bool GetFromNetease()
         {
-            ID3Info File = new ID3Info(path, true);
-            string title = File.ID3v2Info.GetTextFrame("TIT2");
-            string artist = File.ID3v2Info.GetTextFrame("TPE1");
-            Uri Request = new Uri("http://music.163.com/api/search/pc?" + "s=" + title + "&type=1&limit=10");
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Request);
-            request.Method = "POST";
-            request.ContentType = "json";
-            request.Host = "music.163.com";
-            HttpWebResponse response;
             try
-            { response = (HttpWebResponse)request.GetResponse(); }
-            catch (WebException)
             {
-                return false;
-            }
-            StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
-            JObject jo = JObject.Parse(reader.ReadToEnd());
+                ID3Info File = new ID3Info(path, true);
+                string title = File.ID3v2Info.GetTextFrame("TIT2");
+                string artist = File.ID3v2Info.GetTextFrame("TPE1");
+                Uri Request = new Uri("http://music.163.com/api/search/pc?" + "s=" + title + "&type=1&limit=10");
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Request);
+                request.Method = "POST";
+                request.ContentType = "json";
+                request.Host = "music.163.com";
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+                JObject jo = JObject.Parse(reader.ReadToEnd());
 
-            JObject jo2 = new JObject();
-            try
-            {
+                JObject jo2 = new JObject();
                 if ((int)jo["code"] == 200)
                 {
                     string id = "";
@@ -136,51 +130,101 @@ namespace Grape_Music_Player
                     return false;
                 }
             }
-            catch(NullReferenceException)
-            {
-                return false;
-            }
+            catch (Newtonsoft.Json.JsonReaderException){return false;}
+            catch (WebException){return false;}
+            catch(NullReferenceException){return false;}
 
         }
 
         private bool GetFromBaidu()
         {
-            ID3Info File = new ID3Info(path, true);
-            string title = File.ID3v2Info.GetTextFrame("TIT2");
-            string artist = File.ID3v2Info.GetTextFrame("TPE1");
-            Uri Request = new Uri("http://tingapi.ting.baidu.com/v1/restserver/ting?method=baidu.ting.search.catalogSug&query="+title+" - "+artist);
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Request);
-            request.Method = "GET";
-            request.ContentType = "json";
-            HttpWebResponse response;
             try
-            { response = (HttpWebResponse)request.GetResponse(); }
-            catch (WebException)
             {
-                return false;
-            }
-            StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
-            JObject jo = JObject.Parse(reader.ReadToEnd());
-            JObject jo2=new JObject();
-            if((int)jo["error_code"]==22000)
-            {
-                string songId = (string)jo["song"][0]["songid"];
-                Request = new Uri("http://music.baidu.com/data/music/links?songIds=" + songId);
-                request = (HttpWebRequest)WebRequest.Create(Request);
+                ID3Info File = new ID3Info(path, true);
+                string title = File.ID3v2Info.GetTextFrame("TIT2");
+                string artist = File.ID3v2Info.GetTextFrame("TPE1");
+                Uri Request = new Uri("http://tingapi.ting.baidu.com/v1/restserver/ting?method=baidu.ting.search.catalogSug&query=" + title + " - " + artist);
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Request);
                 request.Method = "GET";
                 request.ContentType = "json";
-                try
-                { response = (HttpWebResponse)request.GetResponse(); }
-                catch (WebException)
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+                JObject jo = JObject.Parse(reader.ReadToEnd());
+                JObject jo2 = new JObject();
+                if ((int)jo["error_code"] == 22000)
+                {
+                    string songId = (string)jo["song"][0]["songid"];
+                    Request = new Uri("http://music.baidu.com/data/music/links?songIds=" + songId);
+                    request = (HttpWebRequest)WebRequest.Create(Request);
+                    request.Method = "GET";
+                    request.ContentType = "json";
+                    response = (HttpWebResponse)request.GetResponse();
+                    
+                    reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+                    jo2 = JObject.Parse(reader.ReadToEnd());
+
+                    string DownloadUrl = (string)jo2["data"]["songList"][0]["lrcLink"];
+                    if (DownloadUrl == "")
+                        return false;
+                    string Name = path.Substring(path.LastIndexOf("\\") + 1, path.LastIndexOf(".") - path.LastIndexOf("\\") - 1);
+                    if (!Directory.Exists("Lyrics\\"))
+                        Directory.CreateDirectory("Lyrics\\");
+
+                    string LocalPath = String.Format("Lyrics\\" + Name + ".lrc");
+
+                    HttpWebRequest downloadRequest = (HttpWebRequest)WebRequest.Create(DownloadUrl);
+                    HttpWebResponse downloadResponse = downloadRequest.GetResponse() as HttpWebResponse;
+                    Stream responseStream = downloadResponse.GetResponseStream();
+                    Stream stream = new FileStream(LocalPath, FileMode.Create);
+                    byte[] bArr = new byte[1024];
+                    int size = responseStream.Read(bArr, 0, bArr.Length);
+                    while (size > 0)
+                    {
+                        stream.Write(bArr, 0, size);
+                        size = responseStream.Read(bArr, 0, bArr.Length);
+                    }
+                    stream.Close();
+                    responseStream.Close();
+
+                    lyricPath = LocalPath;
+                    WriteInLyricContent(Encoding.UTF8);
+                    return true;
+                }
+                else
                 {
                     return false;
                 }
-                reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
-                jo2 = JObject.Parse(reader.ReadToEnd());
+            }
+            catch (WebException){return false;}
+            catch (Newtonsoft.Json.JsonReaderException) { return false; }
+        }
 
-                string DownloadUrl = (string)jo2["data"]["songList"][0]["lrcLink"];
-                if (DownloadUrl == "")
+        private bool GetFromGecime()
+        {
+            try
+            {
+                ID3Info File = new ID3Info(path, true);
+                string title = File.ID3v2Info.GetTextFrame("TIT2");
+                string artist = File.ID3v2Info.GetTextFrame("TPE1");
+                Uri Request = new Uri("http://geci.me/api/lyric/" + title + "/" + artist);
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Request);
+                request.Method = "GET";
+                request.ContentType = "json";
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+
+                JObject jo = JObject.Parse(reader.ReadToEnd());
+
+                string DownloadUrl = "";
+                if ((int)jo["count"] >= 1)
+                {
+                    DownloadUrl = (string)jo["result"][0]["lrc"];
+                }
+                else
+                {
+                    //lyric.Add(new LyricItem("找不到歌词", totalTime));
                     return false;
+                }
                 string Name = path.Substring(path.LastIndexOf("\\") + 1, path.LastIndexOf(".") - path.LastIndexOf("\\") - 1);
                 if (!Directory.Exists("Lyrics\\"))
                     Directory.CreateDirectory("Lyrics\\");
@@ -205,66 +249,8 @@ namespace Grape_Music_Player
                 WriteInLyricContent(Encoding.UTF8);
                 return true;
             }
-            else
-            {
-                return false;
-            }
-            
-        }
-
-        private bool GetFromGecime()
-        {
-            ID3Info File = new ID3Info(path, true);
-            string title = File.ID3v2Info.GetTextFrame("TIT2");
-            string artist = File.ID3v2Info.GetTextFrame("TPE1");
-            Uri Request = new Uri("http://geci.me/api/lyric/" + title + "/" + artist);
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Request);
-            request.Method = "GET";
-            request.ContentType = "json";
-            HttpWebResponse response;
-            try
-            { response = (HttpWebResponse)request.GetResponse(); }
-            catch (WebException)
-            {
-                return false;
-            }
-            StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
-
-            JObject jo = JObject.Parse(reader.ReadToEnd());
-
-            string DownloadUrl = "";
-            if ((int)jo["count"] >= 1)
-            {
-                DownloadUrl = (string)jo["result"][0]["lrc"];
-            }
-            else
-            {
-                //lyric.Add(new LyricItem("找不到歌词", totalTime));
-                return false;
-            }
-            string Name = path.Substring(path.LastIndexOf("\\") + 1, path.LastIndexOf(".") - path.LastIndexOf("\\") - 1);
-            if (!Directory.Exists("Lyrics\\"))
-                Directory.CreateDirectory("Lyrics\\");
-
-            string LocalPath = String.Format("Lyrics\\" + Name + ".lrc");
-
-            HttpWebRequest downloadRequest = (HttpWebRequest)WebRequest.Create(DownloadUrl);
-            HttpWebResponse downloadResponse = downloadRequest.GetResponse() as HttpWebResponse;
-            Stream responseStream = downloadResponse.GetResponseStream();
-            Stream stream = new FileStream(LocalPath, FileMode.Create);
-            byte[] bArr = new byte[1024];
-            int size = responseStream.Read(bArr, 0, bArr.Length);
-            while (size > 0)
-            {
-                stream.Write(bArr, 0, size);
-                size = responseStream.Read(bArr, 0, bArr.Length);
-            }
-            stream.Close();
-            responseStream.Close();
-
-            lyricPath = LocalPath;
-            WriteInLyricContent(Encoding.UTF8);
-            return true;
+            catch (WebException){return false;}
+            catch (Newtonsoft.Json.JsonReaderException) { return false; }
         }
 
         private void WriteInLyricContent(Encoding encoding)

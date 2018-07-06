@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
@@ -44,65 +45,75 @@ namespace Grape_Music_Player
         {
             InitializeComponent();
 
-            SqlConnection conn = new SqlConnection(strConn);
-            try
+            using (SqlConnection conn = new SqlConnection(strConn))
             {
-                conn.Open();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-            //首先检查歌曲的数量是否足够
-            int availablenum = 0;
-
-            List<string> delete = new List<string>();
-
-            string str = "SELECT Address from MUSIC";
-            SqlCommand sqlCmd = new SqlCommand(str, conn);
-            do
-            {
-                availablenum = 0;
                 try
                 {
-                    SqlDataReader sqlDataReader = sqlCmd.ExecuteReader();
-                    while (sqlDataReader.Read())
+                    conn.Open();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                }
+
+                
+                if (ConfigurationManager.AppSettings["IsFirstRun"] == "true")
+                {
+
+                    //首先删除数据库中失效的歌曲，同时统计出有效的歌曲数
+                    int availablenum = 0;
+                    List<string> delete = new List<string>();
+                    SqlCommand sqlCmd = new SqlCommand("SELECT Address from MUSIC", conn);
+                    try
                     {
-                        if (File.Exists((string)sqlDataReader[0].ToString()))
+                        SqlDataReader sqlDataReader = sqlCmd.ExecuteReader();
+                        while (sqlDataReader.Read())
                         {
-                            availablenum++;
+                            if (File.Exists(sqlDataReader[0].ToString()))
+                            {
+                                availablenum++;
+                            }
+                            else
+                            {
+                                delete.Add(sqlDataReader[0].ToString());
+                            }
                         }
-                        else
-                        {
-                            delete.Add((string)sqlDataReader[0]);
-                        }
+                        sqlDataReader.Close();
                     }
-                    sqlDataReader.Close();
-                }
-                catch (InvalidOperationException)
-                {
-                    continue;
-                }
+                    catch (InvalidOperationException) { }
 
-                foreach (string d in delete)
-                {
-                    string del = string.Format("DELETE from Music WHERE Address=N'{0}'", d);
-                    SqlCommand deletecmd = new SqlCommand(del, conn);
-                    deletecmd.ExecuteNonQuery();
-                }
+                    SqlCommand deletecmd = new SqlCommand();
+                    foreach (string d in delete)
+                    {
+                        deletecmd = new SqlCommand(string.Format("DELETE from Music WHERE Address=N'{0}'", d), conn);
+                        deletecmd.ExecuteNonQuery();
+                    }
 
-                if (availablenum < 2)
-                {
-                    MessageBox.Show("您尚未添加歌曲或歌曲量不足，请选择文件夹以添加歌曲");
-                    AddButton_Click(this, null);
+                    //删完歌曲后添加歌曲直到歌曲数超过2首
+                    while (availablenum < 2)
+                    {
+                        MessageBox.Show("您尚未添加歌曲或歌曲量不足，请选择文件夹以添加歌曲");
+                        AddButton_Click(this, null);
+                        sqlCmd = new SqlCommand("SELECT COUNT(*) from MUSIC", conn);
+                        SqlDataReader sqlDataReader = sqlCmd.ExecuteReader();
+                        sqlDataReader.Read();
+                        availablenum = (int)sqlDataReader[0];
+                        sqlDataReader.Close();
+                    }
+                    
+                    Configuration config= ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                    config.AppSettings.Settings.Remove("IsFirstRun");
+                    config.AppSettings.Settings.Add("IsFirstRun", "false");
+                    config.Save(ConfigurationSaveMode.Modified);
+                    ConfigurationManager.RefreshSection("appSettings");
                 }
-            } while (availablenum < 2);
-
-            conn.Close();
+                conn.Close();
+            }
 
             player.MusicChange += Player_MusicChange;
             player.MusicNeeded += Player_MusicNeeded;
             player.MusicPlayed += Player_MusicPlayed;
+            player.MusicLost += Player_MusicLost;
 
             TitleTimer.Tick += TitleTimer_Tick;
             TitleTimer.Interval = new TimeSpan(0, 0, 0, 0, 500);
@@ -113,16 +124,24 @@ namespace Grape_Music_Player
             MusicProcessTimer.Tick += MusicProcessTimer_Tick;
             MusicProcessTimer.Interval = new TimeSpan(0, 0, 1);
 
-            try
-            {
-                player.NextSong();
-            }
-            catch (IOException)
-            {
-                player.NextSong();
-            }
+            player.NextSong();
 
             GarbageCollect();
+        }
+
+        private void Player_MusicLost()
+        {
+            SqlConnection conn = new SqlConnection(strConn);
+            try
+            {
+                conn.Open();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
+            SqlCommand deletecmd = new SqlCommand(string.Format("DELETE from Music WHERE Address=N'{0}'", player.CurrentSongAddress), conn);
+            deletecmd.ExecuteNonQuery();
         }
 
         private void MusicProcessTimer_Tick(object sender, EventArgs e)
@@ -346,6 +365,8 @@ namespace Grape_Music_Player
             MessageBoxResult result = MessageBox.Show("删除该歌曲将会同时删除本地文件，确认删除？", "删除文件", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
             if (result == MessageBoxResult.OK)
             {
+                player.Close();
+
                 SqlConnection conn = new SqlConnection(strConn);
                 try
                 {
@@ -355,14 +376,11 @@ namespace Grape_Music_Player
                 {
                     MessageBox.Show(ex.ToString());
                 }
-
                 string del = string.Format("DELETE from Music WHERE Address=N'{0}'", player.CurrentSongAddress.LocalPath);
                 SqlCommand deletecmd = new SqlCommand(del, conn);
                 deletecmd.ExecuteNonQuery();
-
                 conn.Close();
-
-                player.Close();
+                
                 File.Delete(player.CurrentSongAddress.LocalPath);
                 player.NextSong();
             }
