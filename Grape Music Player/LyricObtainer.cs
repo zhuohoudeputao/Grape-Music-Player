@@ -16,11 +16,15 @@ namespace Grape_Music_Player
         private string path;
         private double totalTime;
         private string lyricPath;
+        private string title;
+        private string artist;
         private List<LyricItem> lyric;
-        public LyricObtainer(string Path,double TotalTime)
+        public LyricObtainer(string Path,double TotalTime,string Title,string Artist)
         {
             path = Path;
             totalTime=TotalTime;
+            title = Title;
+            artist = Artist;
         }
 
         public LyricObtainer()
@@ -28,10 +32,12 @@ namespace Grape_Music_Player
 
         }
 
-        public void SetPara(string Path, double TotalTime)
+        public void SetPara(string Path, double TotalTime, string Title, string Artist)
         {
             path = Path;
             totalTime = TotalTime;
+            title = Title;
+            artist = Artist;
         }
 
         public List<LyricItem> GetLyric()
@@ -67,9 +73,6 @@ namespace Grape_Music_Player
         {
             try
             {
-                ID3Info File = new ID3Info(path, true);
-                string title = File.ID3v2Info.GetTextFrame("TIT2");
-                string artist = File.ID3v2Info.GetTextFrame("TPE1");
                 Uri Request = new Uri("http://music.163.com/api/search/pc?" + "s=" + title + "&type=1&limit=10");
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Request);
                 request.Method = "POST";
@@ -140,9 +143,6 @@ namespace Grape_Music_Player
         {
             try
             {
-                ID3Info File = new ID3Info(path, true);
-                string title = File.ID3v2Info.GetTextFrame("TIT2");
-                string artist = File.ID3v2Info.GetTextFrame("TPE1");
                 Uri Request = new Uri("http://tingapi.ting.baidu.com/v1/restserver/ting?method=baidu.ting.search.catalogSug&query=" + title + " - " + artist);
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Request);
                 request.Method = "GET";
@@ -203,9 +203,6 @@ namespace Grape_Music_Player
         {
             try
             {
-                ID3Info File = new ID3Info(path, true);
-                string title = File.ID3v2Info.GetTextFrame("TIT2");
-                string artist = File.ID3v2Info.GetTextFrame("TPE1");
                 Uri Request = new Uri("http://geci.me/api/lyric/" + title + "/" + artist);
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Request);
                 request.Method = "GET";

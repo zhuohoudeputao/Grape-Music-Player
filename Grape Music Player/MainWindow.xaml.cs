@@ -55,11 +55,7 @@ namespace Grape_Music_Player
                 {
                     MessageBox.Show(ex.ToString());
                 }
-
                 
-                if (ConfigurationManager.AppSettings["IsFirstRun"] == "true")
-                {
-
                     //首先删除数据库中失效的歌曲，同时统计出有效的歌曲数
                     int availablenum = 0;
                     List<string> delete = new List<string>();
@@ -101,19 +97,12 @@ namespace Grape_Music_Player
                         sqlDataReader.Close();
                     }
                     
-                    Configuration config= ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                    config.AppSettings.Settings.Remove("IsFirstRun");
-                    config.AppSettings.Settings.Add("IsFirstRun", "false");
-                    config.Save(ConfigurationSaveMode.Modified);
-                    ConfigurationManager.RefreshSection("appSettings");
-                }
                 conn.Close();
             }
 
             player.MusicChange += Player_MusicChange;
             player.MusicNeeded += Player_MusicNeeded;
             player.MusicPlayed += Player_MusicPlayed;
-            player.MusicLost += Player_MusicLost;
 
             TitleTimer.Tick += TitleTimer_Tick;
             TitleTimer.Interval = new TimeSpan(0, 0, 0, 0, 500);
@@ -127,21 +116,6 @@ namespace Grape_Music_Player
             player.NextSong();
 
             GarbageCollect();
-        }
-
-        private void Player_MusicLost()
-        {
-            SqlConnection conn = new SqlConnection(strConn);
-            try
-            {
-                conn.Open();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-            SqlCommand deletecmd = new SqlCommand(string.Format("DELETE from Music WHERE Address=N'{0}'", player.CurrentSongAddress), conn);
-            deletecmd.ExecuteNonQuery();
         }
 
         private void MusicProcessTimer_Tick(object sender, EventArgs e)
@@ -202,13 +176,28 @@ namespace Grape_Music_Player
             conn.Close();
         }
 
+        private delegate void LongTimeDelegate();
         private void Player_MusicChange()//UI更改
         {
             TitleTimer.Stop();
             LyricTimer.Stop();
             MusicProcessTimer.Stop();
+            LoadPicture();
+            //Dispatcher.BeginInvoke(DispatcherPriority.Background, new LongTimeDelegate(LoadPicture));
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new LongTimeDelegate(LoadUI));
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new LongTimeDelegate(LoadLyric));
+            
+            //LoadUI();
+            //LoadLyric();
+
+            MusicProcessTimer.Start();
+
+            GarbageCollect();
+        }
+
+        private void LoadPicture()
+        {
             AlbumPicture.Source = new BitmapImage(new Uri(@"\background.png", UriKind.Relative));
-            //AlbumPicture.Source = null;
             try
             {
                 ID3Info info = new ID3Info(player.CurrentSongAddress.LocalPath, true);
@@ -226,8 +215,10 @@ namespace Grape_Music_Player
             }
             catch (OverflowException) { }
             catch (ArgumentException) { }
+        }
 
-
+        private void LoadUI()
+        {
             SqlConnection conn = new SqlConnection(strConn);
             try
             {
@@ -237,8 +228,7 @@ namespace Grape_Music_Player
             {
                 MessageBox.Show(ex.ToString());
             }
-            string str = string.Format("SELECT Loved,Name from MUSIC WHERE Address=N'{0}'", player.CurrentSongAddress.LocalPath);
-            SqlCommand sqlCmd = new SqlCommand(str, conn);
+            SqlCommand sqlCmd = new SqlCommand(string.Format("SELECT Loved,Name from MUSIC WHERE Address=N'{0}'", player.CurrentSongAddress.LocalPath), conn);
             SqlDataReader sqlDR = sqlCmd.ExecuteReader();
             sqlDR.Read();
             short Loved = (short)sqlDR[0];
@@ -246,8 +236,9 @@ namespace Grape_Music_Player
                 LoveButton.Foreground = System.Windows.Media.Brushes.Red;
             else
                 LoveButton.Foreground = System.Windows.Media.Brushes.White;
-            string Title = (string)sqlDR[1];
 
+
+            string Title = (string)sqlDR[1];
             TitleLabel.Content = Title;
             UpdateLayout();//使得得到的是最新的ActualWidth
             if (TitleLabel.ActualWidth >= TitleBar.ActualWidth && TitleLabel.ActualWidth != 0)
@@ -258,14 +249,13 @@ namespace Grape_Music_Player
 
             sqlDR.Close();
             conn.Close();
+        }
 
+        private void LoadLyric()
+        {
             GetLyric();
             lyricPanel.SetSource(lyric, Title);
             LyricTimer.Start();
-
-            MusicProcessTimer.Start();
-
-            GarbageCollect();
         }
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -303,17 +293,24 @@ namespace Grape_Music_Player
                 try
                 {
                     string Name = File.Substring(File.LastIndexOf("\\") + 1, File.LastIndexOf(".") - File.LastIndexOf("\\") - 1);
-                    SqlCommand sqlCmd = new SqlCommand(string.Format("INSERT INTO MUSIC(Address,Name) VALUES(N'{0}',N'{1}')", File, Name), conn);
+                    ID3Info file = new ID3Info(File, true);
+                    string title = file.ID3v2Info.GetTextFrame("TIT2");
+                    string artist = file.ID3v2Info.GetTextFrame("TPE1");
+                    SqlCommand sqlCmd = new SqlCommand(string.Format("INSERT INTO MUSIC(Address,Name,Title,Artist) VALUES(N'{0}',N'{1}',N'{2}',N'{3}')", File, Name,title,artist), conn);
                     sqlCmd.ExecuteNonQuery();
-
                 }
                 catch (SqlException)
+                {
+                    continue;
+                }
+                catch(OverflowException)
                 {
                     continue;
                 }
             }
             fbd.Dispose();
             conn.Close();
+            GarbageCollect();
         }
 
         private void LoveButton_Click(object sender, RoutedEventArgs e)
@@ -434,8 +431,21 @@ namespace Grape_Music_Player
         private LyricObtainer lyricObtainer = new LyricObtainer();
         private void GetLyric()
         {
-
-            lyricObtainer.SetPara(player.CurrentSongAddress.LocalPath, player.GetMusicDuringTime().TotalSeconds);
+            SqlConnection conn = new SqlConnection(strConn);
+            try
+            {
+                conn.Open();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
+            SqlCommand sqlCmd = new SqlCommand(string.Format("SELECT Title,Artist from MUSIC WHERE Address=N'{0}'", player.CurrentSongAddress.LocalPath), conn);
+            SqlDataReader sqlDR = sqlCmd.ExecuteReader();
+            sqlDR.Read();
+            string title = sqlDR[0].ToString();
+            string artist = sqlDR[1].ToString();
+            lyricObtainer.SetPara(player.CurrentSongAddress.LocalPath, player.GetMusicDuringTime().TotalSeconds,title,artist);
             lyric = lyricObtainer.GetLyric();
         }
 

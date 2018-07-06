@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -45,7 +46,6 @@ namespace Grape_Music_Player
         public event MyEventHandler MusicChange;//音乐改变，用于改变UI
         public event MyEventHandler MusicNeeded;//需要音乐，用于加入新的NextSong
         public event MyEventHandler MusicPlayed;//音乐播放完毕，用于增加歌曲的Times字段
-        public event MyEventHandler MusicLost;//音乐文件失效
         #endregion
 
         #region 构造函数
@@ -87,11 +87,6 @@ namespace Grape_Music_Player
             try
             {
                 Load(NextSongAddress.Dequeue());
-                if (!File.Exists(CurrentSongAddress.ToString()))
-                {
-                    MusicLost();
-                    
-                }
                 Play();
             }
             catch(IOException)
