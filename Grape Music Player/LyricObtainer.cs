@@ -64,9 +64,7 @@ namespace Grape_Music_Player
                     }
                 }
             }
-
             return lyric;
-
         }
 
         private bool GetFromNetease()

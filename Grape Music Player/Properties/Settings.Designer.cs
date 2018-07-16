@@ -33,5 +33,17 @@ namespace Grape_Music_Player.Properties {
                 return ((string)(this["MusicConnectionString"]));
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool IsFirstRun {
+            get {
+                return ((bool)(this["IsFirstRun"]));
+            }
+            set {
+                this["IsFirstRun"] = value;
+            }
+        }
     }
 }

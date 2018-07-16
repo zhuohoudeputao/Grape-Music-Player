@@ -79,8 +79,8 @@
 
                     </Rectangle>
                     <Button Name="LoveButton" ToolTip="我喜欢" Grid.Column="0" Content="&#xf004;" Click="LoveButton_Click"/>
-                    <Button Name="PlayButton" ToolTip="播放/暂停" Grid.Column="1" Content="&#xf04c;" Click="PlayButton_Click"/>
-                    <Button Name="NextButton" ToolTip="下一曲" Grid.Column="2" Content="&#xf054;" Click="NextButton_Click"/>
+                    <Button Name="PlayButton" ToolTip="播放/暂停(试试Fn键吧)" Grid.Column="1" Content="&#xf04c;" Click="PlayButton_Click"/>
+                    <Button Name="NextButton" ToolTip="下一曲(试试Fn键吧)" Grid.Column="2" Content="&#xf054;" Click="NextButton_Click"/>
                     <Button Name="DeleteButton" ToolTip="删除歌曲" Grid.Column="3" Content="&#xf1f8;" Click="DeleteButton_Click"/>
                     <Button Name="LyricButton" ToolTip="显示/隐藏歌词" Grid.Column="4" Content="词" Click="LyricButton_Click"/>
                     <Button Name="AddButton" ToolTip="添加本地歌曲文件夹" Grid.Column="5" Content="&#xf067;" Click="AddButton_Click"/>
