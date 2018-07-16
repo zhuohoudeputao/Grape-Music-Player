@@ -39,8 +39,8 @@ namespace Grape_Music_Player
 
         public LyricPanel()
         {
-            LINEHEIGHT = 30;
-            CenterToTop = 3;
+            LINEHEIGHT = 40;
+            CenterToTop = 5;
             RenderTransform = new TranslateTransform();
         }
 
@@ -69,7 +69,7 @@ namespace Grape_Music_Player
                 Text="",
                 FontSize = 16,
                 Margin = new Thickness(0, (CenterToTop - 1.5) * LINEHEIGHT, 0, LINEHEIGHT),//歌曲名放在第一行
-                HorizontalAlignment = HorizontalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left,
             };
             this.Children.Add(ti);
 
@@ -82,11 +82,11 @@ namespace Grape_Music_Player
                 {
                     LineHeight = LINEHEIGHT,
                     Text = item.Sentence,
-                    FontSize = 14,
+                    FontSize = 15,
                     TextWrapping = TextWrapping.Wrap,
                     Foreground = Brushes.White,
                     Margin = new Thickness(0, (i + CenterToTop) * LINEHEIGHT, 0, LINEHEIGHT),//  j +
-                    HorizontalAlignment = HorizontalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
                     //距离上面是第几句歌词加上上面的歌词占的行数加上额外的行数，距离下面是一个行高
                 };
                 item.TranslateY = -(i) * LINEHEIGHT;//歌词块的垂直偏移量（即与“顶部”的距离）//+ j

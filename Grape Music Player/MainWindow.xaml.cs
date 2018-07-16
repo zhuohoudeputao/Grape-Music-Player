@@ -35,8 +35,6 @@ namespace Grape_Music_Player
     /// </summary>
     public partial class MainWindow : Window
     {
-        //const string strConn = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=|DataDirectory|\Music.mdf;Integrated Security=True;Connect Timeout=30";
-
         Player player = new Player();
         private DispatcherTimer TitleTimer = new DispatcherTimer();
         private DispatcherTimer LyricTimer = new DispatcherTimer();
@@ -328,7 +326,9 @@ namespace Grape_Music_Player
             string title = sqlDR[0].ToString();
             string artist = sqlDR[1].ToString();
             coverObtainer.SetPara(player.CurrentSongAddress.LocalPath, player.GetMusicDuringTime().TotalSeconds, title, artist);
-            AlbumPicture.Source = coverObtainer.GetCover();
+            BitmapSource image = coverObtainer.GetCover();
+            BackgroundPicture.Source = image;
+            AlbumPicture.Source = image;
         }
         private void LoadPicture()
         {
@@ -381,7 +381,7 @@ namespace Grape_Music_Player
             string Title = (string)sqlDR[1];
             TitleLabel.Content = Title;
             UpdateLayout();//使得得到的是最新的ActualWidth
-            if (TitleLabel.ActualWidth >= TitleBar.ActualWidth && TitleLabel.ActualWidth != 0)
+            if (Title.Length>44)
             {
                 TitleLabel.Content = Title + "  ";//加个空格是为了美观
                 TitleTimer.Start();
@@ -534,18 +534,6 @@ namespace Grape_Music_Player
         }
 
         #region 界面控制
-        private void Window_MouseEnter(object sender, MouseEventArgs e)
-        {
-            TitleBar.Visibility = Visibility.Visible;
-            ControlBar.Visibility = Visibility.Visible;
-        }
-
-        private void Window_MouseLeave(object sender, MouseEventArgs e)
-        {
-            TitleBar.Visibility = Visibility.Hidden;
-            ControlBar.Visibility = Visibility.Collapsed;
-        }
-
         private void MinButton_Click(object sender, RoutedEventArgs e)
         {
             Window.WindowState = WindowState.Minimized;
@@ -597,21 +585,6 @@ namespace Grape_Music_Player
             string artist = sqlDR[1].ToString();
             lyricObtainer.SetPara(player.CurrentSongAddress.LocalPath, player.GetMusicDuringTime().TotalSeconds,title,artist);
             lyric = lyricObtainer.GetLyric();
-        }
-        private void LyricButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (LyricPanel.Visibility == Visibility.Visible)
-            {
-                LyricPanel.Visibility = Visibility.Collapsed;
-                LyricCoverRect.Visibility = Visibility.Collapsed;
-                LyricButton.Foreground = System.Windows.Media.Brushes.White;
-            }
-            else
-            {
-                LyricPanel.Visibility = Visibility.Visible;
-                LyricCoverRect.Visibility = Visibility.Visible;
-                LyricButton.Foreground = System.Windows.Media.Brushes.LightGreen;
-            }
         }
         #endregion
 

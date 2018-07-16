@@ -86,7 +86,9 @@ namespace Grape_Music_Player
                         }
                     }
                     if (found == false)
-                        return false;
+                    {
+                        picUrl = (string)jo["result"]["songs"][0]["album"]["picUrl"];
+                    }
                     WebRequest imgRequest = WebRequest.Create(picUrl);
                     try
                     {
