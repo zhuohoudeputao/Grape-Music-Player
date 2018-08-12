@@ -58,6 +58,7 @@ namespace Grape_Music_Player
                 catch (Exception ex)
                 {
                     MessageBox.Show(ex.ToString());
+                    ExitButton_Click(this, null);
                 }
 
                 int availablenum = 0;
@@ -277,9 +278,22 @@ namespace Grape_Music_Player
                 MessageBox.Show(ex.ToString());
             }
 
-            string str = "SELECT top 10 * from MUSIC ORDER BY newid()";
+            string str = "";
+            if (selectSongMode == SelectSongMode.Finding)
+                str = "SELECT top 10 * from MUSIC ORDER BY newid()";
+            else
+                str = "SELECT top 5 * from MUSIC WHERE Loved=1 ORDER BY newid()";
+
             SqlCommand sqlCmd = new SqlCommand(str, conn);
             SqlDataReader sqlDR = sqlCmd.ExecuteReader();
+            if(selectSongMode == SelectSongMode.Enjoying && sqlDR.HasRows==false)
+            {
+                MessageBox.Show("多用红心标记一些歌曲再享受吧");
+                ModeButton.Content = "发现";
+                selectSongMode = SelectSongMode.Finding;
+                player.ChangePlayMode(Player.PlayMode.Sequence);
+                return;
+            }
             while (sqlDR.Read())
             {
                 player.NextSongAddress.Enqueue(new Uri((string)sqlDR[0]));
@@ -381,7 +395,7 @@ namespace Grape_Music_Player
             string Title = (string)sqlDR[1];
             TitleLabel.Content = Title;
             UpdateLayout();//使得得到的是最新的ActualWidth
-            if (Title.Length>44)
+            if (TitleLabel.ActualWidth>=TitleGrid.Width)
             {
                 TitleLabel.Content = Title + "  ";//加个空格是为了美观
                 TitleTimer.Start();
@@ -604,6 +618,36 @@ namespace Grape_Music_Player
             }
         }
         #endregion
+
+        private enum SelectSongMode:int
+        {
+            Enjoying=1,
+            Finding=0,
+            SuperEnjoying=2
+        }
+        private SelectSongMode selectSongMode = SelectSongMode.Finding;
+        private void ModeButton_Click(object sender, RoutedEventArgs e)
+        {
+            switch(ModeButton.Content.ToString())
+            {
+                case "发现":
+                    ModeButton.Content = "享受";
+                    selectSongMode = SelectSongMode.Enjoying;
+                    player.NextSongAddress.Clear();
+                    break;
+                case "享受":
+                    ModeButton.Content = "超享受";
+                    selectSongMode = SelectSongMode.SuperEnjoying;
+                    player.ChangePlayMode(Player.PlayMode.Single);
+                    break;
+                case "超享受":
+                    ModeButton.Content = "发现";
+                    selectSongMode = SelectSongMode.Finding;
+                    player.NextSongAddress.Clear();
+                    player.ChangePlayMode(Player.PlayMode.Sequence);
+                    break;
+            }
+        }
     }
 
     

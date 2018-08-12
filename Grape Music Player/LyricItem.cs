@@ -40,7 +40,7 @@ namespace Grape_Music_Player
         public LyricPanel()
         {
             LINEHEIGHT = 40;
-            CenterToTop = 5;
+            CenterToTop = 4;
             RenderTransform = new TranslateTransform();
         }
 
@@ -85,7 +85,7 @@ namespace Grape_Music_Player
                     FontSize = 15,
                     TextWrapping = TextWrapping.Wrap,
                     Foreground = Brushes.White,
-                    Margin = new Thickness(0, (i + CenterToTop) * LINEHEIGHT, 0, LINEHEIGHT),//  j +
+                    Margin = new Thickness(0, (i + CenterToTop) * LINEHEIGHT, 0, LINEHEIGHT),//  j + (i + CenterToTop) * 
                     HorizontalAlignment = HorizontalAlignment.Left,
                     //距离上面是第几句歌词加上上面的歌词占的行数加上额外的行数，距离下面是一个行高
                 };

@@ -8,76 +8,53 @@
         mc:Ignorable="d"
         Title="Grape Music Player"
         Name="Window"
-        Height="500" Width="750"
+        Height="460" Width="745"
         WindowStyle="None" WindowStartupLocation="Manual"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         AllowsTransparency="True"
         Background="LightGray">
     <Grid>
         <Image Name="BackgroundPicture" Source="background.png"
-               Height="500" Width="750" Stretch="UniformToFill">
+               Height="500" Width="785" Stretch="UniformToFill" Margin="-20,-20,0,0">
             <Image.Effect>
                 <BlurEffect Radius="30"/>
             </Image.Effect>
         </Image>
-        <Rectangle Height="500" Width="750" Fill="Black" Opacity="0.5">
-            
-        </Rectangle>
+
+        <Rectangle Height="500" Width="750" Fill="Black" Opacity="0.5"/>
+
         <Image  Name="AlbumPicture" Source="background.png"
                 HorizontalAlignment="Left" VerticalAlignment="Top"
-                Height="300" Width="300" Margin="50,80,0,0">
+                Height="250" Width="250" Margin="50,80,0,0">
             <Image.Effect>
                 <DropShadowEffect Color="#FF2D2D30" ShadowDepth="4"/>
             </Image.Effect>
         </Image>
-        <Label Name="TitleLabel" Content="Title"
-               HorizontalAlignment="Left" VerticalAlignment="Top"
-               Margin="400,50,0,0"
-               Width="300"
-               Foreground="White" FontWeight="Bold" FontSize="30">
-        </Label>
+
+        <Grid Name="TitleGrid" Width="250"
+              HorizontalAlignment="Left" VerticalAlignment="Top"
+              Margin="50,355,0,0"
+              >
+            <Label Name="TitleLabel" Content="Title"
+               HorizontalAlignment="Center" VerticalAlignment="Top"
+               Foreground="White" FontWeight="Bold" FontSize="20">
+            </Label>
+        </Grid>
         <Grid Name="LyricPanel" Focusable="False"
               HorizontalAlignment="Left" VerticalAlignment="Top"
-              Margin="400,80,0,0" Height="350" Width="300">
+              Margin="350,80,0,0" Height="300" Width="300">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden" Focusable="False">
                 <local:LyricPanel x:Name="lyricPanel" Focusable="False"/>
             </ScrollViewer>
         </Grid>
-        <DockPanel  HorizontalAlignment="Right" VerticalAlignment="Top"
-                    Width="160">
-            <Grid Name="ControlBar" Height="35" DockPanel.Dock="Bottom">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Button Name="AddButton" ToolTip="添加本地歌曲文件夹" Grid.Column="0" Content="&#xf067;" Click="AddButton_Click"/>
-                <Button Name="TopButton" ToolTip="置顶/取掉置顶" Grid.Column="1" Content="&#xf08d;" Click="TopButton_Click"/>
-                <Button Name="MinButton" ToolTip="最小化" Grid.Column="2" Content="&#xf2d1;" Click="MinButton_Click"/>
-                <Button Name="ExitButton" ToolTip="退出" Grid.Column="3" Content="&#xf00d;" Click="ExitButton_Click"/>
-            </Grid>
-        </DockPanel>
-        <DockPanel  HorizontalAlignment="Left" VerticalAlignment="Top" 
-                    Margin="50,400,0,0" Width="300">
-            <Grid Name="ControlBar1" Height="35" DockPanel.Dock="Bottom">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Button Name="LoveButton" ToolTip="我喜欢" Grid.Column="0" Content="&#xf004;" Click="LoveButton_Click"/>
-                <Button Name="PlayButton" ToolTip="播放/暂停(试试Fn键吧)" Grid.Column="2" Content="&#xf04c;" Click="PlayButton_Click"/>
-                <Button Name="NextButton" ToolTip="下一曲(试试Fn键吧)" Grid.Column="3" Content="&#xf054;" Click="NextButton_Click"/>
-                <Button Name="DeleteButton" ToolTip="删除歌曲" Grid.Column="1" Content="&#xf1f8;" Click="DeleteButton_Click"/>
-            </Grid>
-        </DockPanel>
         <Slider Name="MusicProcessSlider"
-                            Height="5" 
-                            VerticalAlignment="Bottom" 
-                            Focusable="False" 
-                            ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                Width="5"
+                Focusable="False" 
+                ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                Orientation="Vertical"
+                HorizontalAlignment="Right"
+                Margin="0,0,50,0"
+                RenderTransformOrigin="0.5,0.5">
             <Slider.Resources>
                 <Style x:Key="MyRepeatButton" TargetType="RepeatButton">
                     <Setter Property="Template">
@@ -96,6 +73,14 @@
                     </Style.Triggers>
                 </Style>
             </Slider.Resources>
+            <Slider.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform/>
+                    <RotateTransform Angle="180"/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Slider.RenderTransform>
             <Slider.Template>
                 <ControlTemplate TargetType="Slider">
                     <Track Grid.Column="1" Focusable="False">
@@ -122,6 +107,31 @@
                 </ControlTemplate>
             </Slider.Template>
         </Slider>
+        <Grid  HorizontalAlignment="Right" VerticalAlignment="Top"
+               Width="50"
+               Height="{Binding ElementName=Window,Path=ActualHeight}">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Button Name="ExitButton" ToolTip="退出" Grid.Row="0" Content="&#xf00d;" Click="ExitButton_Click"/>
+            <Button Name="MinButton" ToolTip="最小化" Grid.Row="1" Content="&#xf2d1;" Click="MinButton_Click"/>
+            <Button Name="TopButton" ToolTip="置顶/取掉置顶" Grid.Row="2" Content="&#xf08d;" Click="TopButton_Click"/>
+            <Button Name="AddButton" ToolTip="添加本地歌曲文件夹" Grid.Row="3" Content="&#xf067;" Click="AddButton_Click"/>
+            <Button Name="LoveButton" ToolTip="我喜欢" Grid.Row="4" Content="&#xf004;" Click="LoveButton_Click"/>
+            <Button Name="PlayButton" ToolTip="播放/暂停(试试Fn键吧)" Grid.Row="5" Content="&#xf04c;" Click="PlayButton_Click"/>
+            <Button Name="NextButton" ToolTip="下一曲(试试Fn键吧)" Grid.Row="6" Content="&#xf054;" Click="NextButton_Click"/>
+            <Button Name="DeleteButton" ToolTip="删除歌曲" Grid.Row="7" Content="&#xf1f8;" Click="DeleteButton_Click"/>
+            <Button Name="ModeButton" ToolTip="切换播放模式" Grid.Row="8" Content="发现" Click="ModeButton_Click"/>
+        </Grid>
+
     </Grid>
     <Window.Resources>
         <Style x:Name="Slider_CustomStyle" TargetType="Slider">

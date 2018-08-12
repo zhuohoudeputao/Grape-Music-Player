@@ -40,7 +40,18 @@ namespace Grape_Music_Player
             }
         }
         #endregion
-
+        #region
+        public enum PlayMode:int
+        {
+            Sequence=0,
+            Single=1
+        }
+        public PlayMode playMode = PlayMode.Sequence;
+        public void ChangePlayMode(PlayMode newMode)
+        {
+            playMode = newMode;
+        }
+        #endregion
         #region 相关事件
         public delegate void MyEventHandler();
         public event MyEventHandler MusicChange;//音乐改变，用于改变UI
@@ -81,19 +92,30 @@ namespace Grape_Music_Player
         
         public void NextSong()
         {
-            Close();
-            if (NextSongAddress.Count < 2)
-                MusicNeeded();
-            try
+            switch(playMode)
             {
-                Load(NextSongAddress.Dequeue());
-                Play();
-            }
-            catch(IOException)
-            {
-                if(NextSongAddress.Count < 2)
-                    MusicNeeded();
-                NextSong();
+                case PlayMode.Sequence:
+                    Close();
+                    if (NextSongAddress.Count < 2)
+                        MusicNeeded();
+                    try
+                    {
+                        if (NextSongAddress.Count < 2)
+                            MusicNeeded();
+                        Load(NextSongAddress.Dequeue());
+                        Play();
+                    }
+                    catch (IOException)
+                    {
+                        if (NextSongAddress.Count < 2)
+                            MusicNeeded();
+                        NextSong();
+                    }
+                    break;
+                case PlayMode.Single:
+                    Stop();
+                    Play();
+                    break;
             }
         }
         private void AutoNextSong(object sender, EventArgs e)
