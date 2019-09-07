@@ -61,7 +61,7 @@ namespace Grape_Music_Player
                     ExitButton_Click(this, null);
                 }
 
-                int availablenum = 0;
+                int availablenum = Properties.Settings.Default.AvailableNum;
                 if (Properties.Settings.Default.IsFirstRun==true)
                 {
                     //首先删除数据库中失效的歌曲，同时统计出有效的歌曲数
@@ -90,37 +90,20 @@ namespace Grape_Music_Player
                     Properties.Settings.Default.Save();
 
                 }
-                else//第二次运行就不用先遍历整个数据库了，只需要找到两首能用的歌就可以开始运行
-                {
-                    SqlCommand sqlCmd = new SqlCommand("SELECT Address from MUSIC", conn);
-                    try
-                    {
-                        SqlDataReader sqlDataReader = sqlCmd.ExecuteReader();
-                        while (sqlDataReader.Read())
-                        {
-                            if (File.Exists(sqlDataReader[0].ToString()))
-                            {
-                                availablenum++;
-                                if (availablenum >= 2)
-                                    break;
-                            }
-                        }
-                        sqlDataReader.Close();
-                    }
-                    catch (InvalidOperationException) { }
-                }
 
-                while (availablenum < 2)
+                while (availablenum <= 0)
                 {
                     MessageBox.Show("您尚未添加歌曲或歌曲量不足，请选择文件夹以添加歌曲");
-                    AddButton_Click(this, null);
+                    AddButton_Click(this, null);// add musics in the path
                     SqlCommand sqlCmd = new SqlCommand("SELECT COUNT(*) from MUSIC", conn);
                     SqlDataReader sqlDataReader = sqlCmd.ExecuteReader();
                     sqlDataReader.Read();
-                    availablenum = (int)sqlDataReader[0];
+                    availablenum = (int)sqlDataReader[0];//remember the availableNum
                     sqlDataReader.Close();
                 }
                 conn.Close();
+                Properties.Settings.Default.AvailableNum = availablenum;
+                Properties.Settings.Default.Save();
             }
 
             Dispatcher.BeginInvoke(DispatcherPriority.Background, new LongTimeDelegate(DeleteUselessSongs));
@@ -195,6 +178,7 @@ namespace Grape_Music_Player
 
         private void DeleteUselessSongs()
         {
+            int availableNum = 0;
             using (SqlConnection conn = new SqlConnection(Properties.Settings.Default.MusicConnectionString))
             {
                 try
@@ -215,6 +199,8 @@ namespace Grape_Music_Player
                     {
                         if (!File.Exists(sqlDataReader[0].ToString()))
                             delete.Add(sqlDataReader[0].ToString());
+                        else
+                            availableNum++;
                     }
                     sqlDataReader.Close();
                 }
@@ -228,6 +214,9 @@ namespace Grape_Music_Player
                 }
 
                 conn.Close();
+
+                Properties.Settings.Default.AvailableNum = availableNum;
+                Properties.Settings.Default.Save();
             }
         }
 
